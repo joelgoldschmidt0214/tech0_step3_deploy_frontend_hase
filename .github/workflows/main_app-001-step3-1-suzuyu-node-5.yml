@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v4 # v3 から v4 へ更新
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
           cache: 'npm' # npmのキャッシュを有効化
@@ -41,11 +41,11 @@ jobs:
         run: |
           mkdir -p deploy_package
           cp -r .next deploy_package/
-          cp -r public deploy_package/
+          if [ -d "public" ]; then cp -r public deploy_package/; else echo "Public directory not found, skipping copy."; fi # publicフォルダが存在する場合のみコピー
           cp package.json deploy_package/
           cp package-lock.json deploy_package/ # 依存関係の解決に必要
           if [ -f next.config.js ]; then cp next.config.js deploy_package/; fi
-          # その他、ルートに必要な設定ファイルがあればここに追加 (例: .env.production.local などは含めない)
+          # その他、ルートに必要な設定ファイルがあればここに追加
           cd deploy_package
           zip -r ../release.zip .
 
