@@ -28,12 +28,6 @@ jobs:
       - name: Build application
         env:
           NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
-          # もしビルド時に NEXT_PUBLIC_API_ENDPOINT が必要なら上記を有効化。
-          # App Service側の環境変数でランタイム時に設定されていれば、ビルド時に必ずしも必要ない場合もあります。
-          # next.config.js で process.env.API_ENDPOINT を参照している箇所があり、
-          # それがビルド時に解決される必要があるなら、ここで設定が必要です。
-          # 今回の next.config.js では直接参照していないので、必須ではないかもしれません。
-          # ただし、ページコンポーネント内でビルド時にAPIを叩く場合は必要です。
         run: |
           npm run build --if-present
           # npm run test --if-present # 必要であればテストを実行
