@@ -26,8 +26,8 @@ jobs:
         run: npm ci # package-lock.json に基づいてクリーンインストール
 
       - name: Build application
-        # env:
-          # NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
+        env:
+          NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
           # もしビルド時に NEXT_PUBLIC_API_ENDPOINT が必要なら上記を有効化。
           # App Service側の環境変数でランタイム時に設定されていれば、ビルド時に必ずしも必要ない場合もあります。
           # next.config.js で process.env.API_ENDPOINT を参照している箇所があり、
