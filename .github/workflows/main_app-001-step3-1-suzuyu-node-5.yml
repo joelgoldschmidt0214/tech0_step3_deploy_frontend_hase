@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - app-001-step3-1-suzuyu-node-5
 
 on:
@@ -20,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4 # v3 から v4 へ更新
         with:
           node-version: '22.x'
           cache: 'npm' # npmのキャッシュを有効化
@@ -29,25 +26,32 @@ jobs:
         run: npm ci # package-lock.json に基づいてクリーンインストール
 
       - name: Build application
-        run: npm run build --if-present
-        # ビルド時に環境変数が必要な場合は以下のように env を設定
-        # env:
-        #   NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.AZURE_FASTAPI_APP_URL }} # 例
-
-      # - name: Run tests (if any)
-      #   run: npm run test --if-present
-
-      - name: Create deployment package (excluding node_modules)
+        env:
+          # NEXT_PUBLIC_API_ENDPOINT: ${{ secrets.NEXT_PUBLIC_API_ENDPOINT }}
+          # もしビルド時に NEXT_PUBLIC_API_ENDPOINT が必要なら上記を有効化。
+          # App Service側の環境変数でランタイム時に設定されていれば、ビルド時に必ずしも必要ない場合もあります。
+          # next.config.js で process.env.API_ENDPOINT を参照している箇所があり、
+          # それがビルド時に解決される必要があるなら、ここで設定が必要です。
+          # 今回の next.config.js では直接参照していないので、必須ではないかもしれません。
+          # ただし、ページコンポーネント内でビルド時にAPIを叩く場合は必要です。
         run: |
-          mkdir -p deploy_package
-          cp -r .next deploy_package/
-          if [ -d "public" ]; then cp -r public deploy_package/; else echo "Public directory not found, skipping copy."; fi # publicフォルダが存在する場合のみコピー
-          cp package.json deploy_package/
-          cp package-lock.json deploy_package/ # 依存関係の解決に必要
-          if [ -f next.config.js ]; then cp next.config.js deploy_package/; fi
-          # その他、ルートに必要な設定ファイルがあればここに追加
-          cd deploy_package
-          zip -r ../release.zip .
+          npm run build --if-present
+          # npm run test --if-present # 必要であればテストを実行
+
+      - name: Prepare standalone artifact
+        run: |
+          mkdir -p deploy # デプロイ用ディレクトリを作成
+          cp -r ./.next/standalone/. ./deploy # standaloneフォルダの中身をコピー
+          cp -r ./.next/static/. ./deploy/.next/static # staticフォルダをコピー
+          if [ -d "public" ]; then cp -r public ./deploy/public; fi # publicフォルダが存在すればコピー
+          # standalone モードでは package.json は不要なことが多いですが、
+          # server.js が依存するモジュールが node_modules にない場合に備え、
+          # package.json と package-lock.json を含めることも検討できます (通常は不要)。
+
+      - name: Zip artifact for deployment
+        run: |
+          cd deploy
+          zip -r ../release.zip . # deployディレクトリの中身をzip化
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -67,9 +71,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          path: . # release.zip をカレントディレクトリにダウンロード
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip -d extracted_app # 展開先ディレクトリを指定
+        run: unzip release.zip -d ./extracted_app # release.zip を extracted_app ディレクトリに展開
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
@@ -77,5 +82,5 @@ jobs:
         with:
           app-name: 'app-001-step3-1-suzuyu-node-5'
           slot-name: 'Production' # 'Production'スロットを使用しない場合は省略可
-          package: extracted_app # 展開したディレクトリを指定
+          package: ./extracted_app # 展開したディレクトリを指定 (中には standalone の内容が入っている)
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B1FDC51C3E854874BBDB628FF17BF52F }}
