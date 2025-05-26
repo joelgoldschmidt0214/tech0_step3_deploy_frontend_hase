@@ -9,11 +9,25 @@ export default function Page() {
   const [customerInfos, setCustomerInfos] = useState([]);
 
   useEffect(() => {
-    console.log('useEffect start');
     const fetchAndSetCustomer = async () => {
-      const customerData = await fetchCustomers();
-      console.log('fetch')
-      setCustomerInfos(customerData);
+      try {
+        const apiUrlBase = process.env.NEXT_PUBLIC_API_ENDPOINT;
+        console.log("API URL Base for fetch:", apiUrlBase); // これが undefined かどうか
+
+        if (!apiUrlBase) {
+          console.error("API Endpoint is not defined! Cannot fetch customers.");
+          return;
+        }
+
+        const response = await fetch(`${apiUrlBase}/allcustomers`); // FastAPIのエンドポイントを想定
+        if (!response.ok) {
+          throw new Error(`Failed to fetch customers: ${response.status} ${response.statusText}`);
+        }
+        const customerData = await response.json();
+        setCustomerInfos(customerData);
+      } catch (error) {
+        console.error("Error fetching customer data:", error);
+      }
     };
     fetchAndSetCustomer();
   }, []);
